@@ -535,6 +535,14 @@ void Sandbox::wireInternalCourierHooks()
   _courier->onConnected([this]() {
     onCourierConnected();
   });
+  // A message the transport could not receive (out of memory, queue full)
+  // never reaches dispatch, so nothing else tells the host its send was
+  // lost. Report it as telemetry; the host retries on seeing it.
+  // NOTE: single-slot — replaces an onError the user registered in
+  // onConfigureNetwork. Upstream needs a forwarding slot before this ships.
+  _courier->onError([this](const char* category, const char* message) {
+    if (strcmp(category, "RX") == 0) emitTelemetry("rx_dropped", message);
+  });
 }
 
 void Sandbox::injectMessage(const char* transportName, const char* type,

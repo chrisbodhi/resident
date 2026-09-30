@@ -89,6 +89,7 @@ public:
   void onConnectionChange(std::function<void(State)>) {}
   void onTransportsWillConnect(std::function<void()>) {}
   void onConnected(std::function<void()>) {}
+  void onError(std::function<void(const char*, const char*)>) {}
 
   // Default-transport send (Sandbox::publishEvent's network fallback when no
   // event sink is set). Native tests run networkless (cfg.network unset), so
