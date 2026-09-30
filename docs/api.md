@@ -1180,6 +1180,7 @@ Every telemetry emission goes out TWO ways:
 | `persist_load_failed` | A persisted app failed to load on boot and was discarded |
 | `persist_too_big` | An app was too large to save to the persistent store |
 | `store_full` | An over-budget `store.set` was rejected; `data.error` carries the key (once per key per app load) |
+| `rx_dropped` | An incoming message was dropped before dispatch (out of memory or a full receive queue) — the device cannot say which one, so a host that sent something recently (an app push) should resend it. `data.error` carries Courier's reason |
 | `framework_applied` | A framework (built-in or slot update) loaded successfully |
 | `framework_error` | A framework chunk failed to compile or run; `data.error` carries the message. A failing slot blob is discarded and the built-in runs |
 | `dropped` | The drop counter's periodic report; `data.count` = items silently dropped since boot (ring overflow, oversize payloads, rate limits, closed legacy paths). At most one report per minute, only when changed |
@@ -1440,6 +1441,7 @@ ESP-IDF CMake component graph.
 | `RESIDENT_EVENT_RING_SIZE` | `8` | Inbound event ring depth (one slot kept free, so 7 usable); oldest event is dropped when full. Build-flag overridable |
 | `RESIDENT_EVENT_QUEUE_SIZE` | `16` | Outbound event queue depth (rate-limited / offline sends wait here). Build-flag overridable |
 | `RESIDENT_EVENT_JSON_MAX` | `1024` | Event `data` buffer — bounds the `events.send` serializer, the incoming app-channel `data`, and each ring slot. Build-flag overridable; the ring grows by 8× any increase |
+| `RESIDENT_NO_PSRAM_GC_PAUSE` | `120` | Lua incremental-GC pause on boards without PSRAM (Lua's default, 200, still applies with PSRAM). Lower keeps less garbage — and less fragmentation — in the heap the network stack also allocates from. Build-flag overridable |
 | `RESIDENT_STORE_JSON_MAX` | `2048` | Serialized size cap on the whole persisted `store` blob. Build-flag overridable |
 | `StoreModule::STORE_NS_MAX` | `32` | Maximum `storeNs` length in characters |
 | Event `name` max | `32 chars` | `Event::name` buffer size — driver event names longer than 31 bytes are truncated |
