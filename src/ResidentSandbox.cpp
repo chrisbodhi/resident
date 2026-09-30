@@ -2949,17 +2949,7 @@ bool Sandbox::callInit()
 
   lua_rawgeti(_lua, LUA_REGISTRYINDEX, _initFuncRef);
 
-  // Push ctx table
-  unsigned long initT = millis() - _triggerResetTime;
-  lua_newtable(_lua);
-  lua_pushinteger(_lua, initT);
-  lua_setfield(_lua, -2, "time_ms");
-  lua_pushinteger(_lua, _triggerCount);
-  lua_setfield(_lua, -2, "trigger_count");
-  pushCtxGenerationId();
-
-  // Time-of-day fields
-  pushLocalTimeFields();
+  pushCtxTable();
 
   armExecutionGuard();
   int result = lua_pcall(_lua, 1, 0, 0);
@@ -2980,18 +2970,7 @@ void Sandbox::callOnTick(unsigned long dt_ms)
 
   lua_rawgeti(_lua, LUA_REGISTRYINDEX, _onTickFuncRef);
 
-  // Push ctx table
-  unsigned long t = millis() - _triggerResetTime;
-  lua_newtable(_lua);
-  lua_pushinteger(_lua, t);
-  lua_setfield(_lua, -2, "time_ms");
-  lua_pushinteger(_lua, _triggerCount);
-  lua_setfield(_lua, -2, "trigger_count");
-  pushCtxGenerationId();
-
-  // Time-of-day fields
-  pushLocalTimeFields();
-
+  pushCtxTable();
   lua_pushinteger(_lua, dt_ms);
 
   armExecutionGuard();
@@ -3034,7 +3013,10 @@ void Sandbox::pushLocalTimeFields()
 // framework hooks.
 void Sandbox::pushCtxTable()
 {
-  lua_newtable(_lua);
+  // Presized for its (up to) 7 fields: built at 10 Hz, a table grown
+  // field-by-field reallocates its hash part 1→2→4→8 — five differently
+  // sized allocations per tick, which is what fragments a no-PSRAM heap.
+  lua_createtable(_lua, 0, 8);
   lua_pushinteger(_lua, millis() - _triggerResetTime);
   lua_setfield(_lua, -2, "time_ms");
   lua_pushinteger(_lua, _triggerCount);
