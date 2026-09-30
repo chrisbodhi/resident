@@ -261,6 +261,15 @@ void Sandbox::initialize()
   // Created once, up front: the arm path must not allocate.
   createExecutionDeadlineTimer();
 
+  // The outbound event queue never holds more than RESIDENT_EVENT_QUEUE_SIZE
+  // entries; reserve that now, while the heap is clean. Grown lazily, the
+  // vector's storage was allocated at the first events.send — wherever the
+  // heap had room at that moment, often inside space a large app was about
+  // to free — and a vector never gives its storage back, so on a no-PSRAM
+  // board it split the largest free block for the rest of the session
+  // (measured: 82 KB -> 41 KB after a few large apps that sent events).
+  _eventQueue.reserve(RESIDENT_EVENT_QUEUE_SIZE);
+
   // Initialize function refs to LUA_NOREF
   _initFuncRef = LUA_NOREF;
   _onTickFuncRef = LUA_NOREF;
