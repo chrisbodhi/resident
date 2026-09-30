@@ -1180,7 +1180,7 @@ Every telemetry emission goes out TWO ways:
 | `persist_load_failed` | A persisted app failed to load on boot and was discarded |
 | `persist_too_big` | An app was too large to save to the persistent store |
 | `store_full` | An over-budget `store.set` was rejected; `data.error` carries the key (once per key per app load) |
-| `rx_dropped` | An incoming message was dropped before dispatch (out of memory or a full receive queue) — the device cannot say which one, so a host that sent something recently (an app push) should resend it. `data.error` carries Courier's reason |
+| `rx_dropped` | Incoming messages were dropped before dispatch — out of memory, a full receive queue, or a message that began as JSON but failed to parse. The device cannot say which message, so a host that sent something recently (an app push) should resend it. `data.error` carries Courier's reason, e.g. `"3 incoming messages dropped"` or `"incoming message dropped: InvalidInput"` |
 | `framework_applied` | A framework (built-in or slot update) loaded successfully |
 | `framework_error` | A framework chunk failed to compile or run; `data.error` carries the message. A failing slot blob is discarded and the built-in runs |
 | `dropped` | The drop counter's periodic report; `data.count` = items silently dropped since boot (ring overflow, oversize payloads, rate limits, closed legacy paths). At most one report per minute, only when changed |
