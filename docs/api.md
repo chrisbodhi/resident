@@ -130,9 +130,11 @@ sandbox.loop();    // call from Arduino loop()
 
 ```cpp
 sandbox.onConfigureNetwork([](Courier::Client& c) {
-    c.transport<Courier::WebSocketTransport>("ws").onConfigure([](auto& t) {
-        t.setRootCA(rootCertPem);
-    });
+    // onConfigure hands you the raw ESP-IDF client config, just before init.
+    c.transport<Courier::WebSocketTransport>("ws").onConfigure(
+        [](esp_websocket_client_config_t& cfg) {
+            cfg.cert_pem = rootCertPem;   // pin a CA instead of the cert bundle
+        });
 });
 ```
 

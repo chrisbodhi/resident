@@ -67,7 +67,7 @@ See [`device-minimal-resident/src/main.cpp`](../examples/adafruit-esp32-s2-feath
 
 ### Decisions to make
 
-- **Relay endpoint.** The default public relay (`resident.inanimate.tech`) is the simplest path; `push-app` defaults to it. To self-host, deploy the Cloudflare Worker under `examples/m5stick-demo/server/` and replace the host constant. The protocol is identical.
+- **Relay endpoint.** The default public relay (`resident.inanimate.tech`) is the simplest path; `push-app` defaults to it. To self-host, deploy the Cloudflare Worker in `examples/server-template/` and replace the host constant. The protocol is identical.
 - **`deviceType` string.** Logged on the relay side and used to seed the captive-portal AP name (`Resident <DeviceType> <ID-short>`). Keep it short and meaningful.
 - **Wi-Fi UX.** Courier defaults to a WiFiManager captive portal: first boot exposes an open AP, credentials persist in NVS thereafter. For headless deployments, hardcode `WiFi.begin(ssid, pass)` instead — but the captive portal is friendlier for examples.
 - **Pre-connection display.** What the board shows during `"WiFi"` / `"Connecting"` states is up to you. Whatever you pick, leave room for the 8-character device ID — that's the string the user needs to read off the board to push apps.
@@ -163,7 +163,7 @@ Three skills work together, all installed by `tools/agent-plugin/`:
 
 The relay forwards the message to the device's WebSocket. No authentication beyond the device ID (treat it like an API key for development; switch to a longer random ID for anything you actually deploy — see the m5stick-demo's `## Device IDs as auth` note).
 
-To self-host instead, deploy the Cloudflare Worker under `examples/m5stick-demo/server/` and pass `--base-url https://your-worker.example.workers.dev`.
+To self-host instead, deploy the Cloudflare Worker in `examples/server-template/` and pass `--base-url https://your-worker.example.workers.dev`.
 
 ### What the agent should be able to demonstrate
 
