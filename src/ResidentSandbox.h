@@ -628,6 +628,7 @@ private:
     // app. Hard-coded duration.
     String _pendingPersistedSource;
     unsigned long _countdownStartMs = 0;
+    unsigned long _setupMs = 0;          // for offlineRestoreAfterMs
     int _lastCountdownSecondShown = -1;
     static constexpr unsigned long BOOT_COUNTDOWN_MS = 20000;
     void updateBootCountdown();

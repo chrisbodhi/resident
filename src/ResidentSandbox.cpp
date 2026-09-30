@@ -470,6 +470,7 @@ void Sandbox::setup()
 {
   if (_initialized) return;
   _initialized = true;
+  _setupMs = millis();
 
   // deviceId is derived from the chip MAC and needed for the boot countdown
   // even in standalone (networkless) mode.
@@ -2034,6 +2035,16 @@ void Sandbox::showReadyScreen()
 void Sandbox::loop() {
   if (_courier.has_value()) {
     _courier->loop();
+  }
+
+  // Offline restore: the host hasn't answered in offlineRestoreAfterMs, so
+  // arm the persisted app without it (enterIdleScreen starts the countdown;
+  // it's a no-op once an app is pending or running, and a later connection's
+  // push still supersedes the countdown).
+  if (_config.offlineRestoreAfterMs && _courier.has_value() &&
+      _runState == RunState::Ready && !_pendingPersistedSource.isEmpty() &&
+      !isConnected() && millis() - _setupMs >= _config.offlineRestoreAfterMs) {
+    enterIdleScreen();
   }
 
   // Debounced store write-through — runs even with no app loaded so a

@@ -87,6 +87,13 @@ struct SandboxConfig {
   bool persistApps = true;
   PersistentStore* persistentStore = nullptr;
 
+  // A networked device arms its persisted app on its first connection (a
+  // connected host normally pushes the current app anyway). With this > 0,
+  // a device that still hasn't connected this many ms after setup() arms it
+  // regardless — the usual countdown, then load — so a device whose host is
+  // offline still runs its last app. 0 = wait for the connection (default).
+  uint32_t offlineRestoreAfterMs = 0;
+
   // Offline-first (0.8): ticking and event dispatch no longer gate on
   // connectivity — a disconnected device keeps running its app; only
   // network sends wait. Set true to restore the old gated behavior.

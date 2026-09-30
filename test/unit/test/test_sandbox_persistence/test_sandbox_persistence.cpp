@@ -332,6 +332,38 @@ void test_networked_countdown_armed_on_connect_not_setup(void) {
   TEST_ASSERT_EQUAL_INT(0, (int)display->texts.size());  // no countdown until connected
 }
 
+// offlineRestoreAfterMs: a networked device whose host never answers arms
+// its persisted app anyway once the window passes — countdown, then load.
+void test_networked_offline_restore_after_window(void) {
+  store->save(GOOD_APP, strlen(GOOD_APP));
+  Resident::SandboxConfig cfg;
+  cfg.deviceType    = "native-test";
+  cfg.statusDisplay = display;
+  cfg.persistApps   = true;
+  cfg.persistentStore = store;
+  cfg.offlineRestoreAfterMs = 15000;
+  Courier::Config courier;
+  cfg.network = courier;                 // networked — stub never connects
+  sandbox = new Resident::Sandbox(cfg);
+  sandbox->setTelemetryCallback([](const char* json) { telemetry->push_back(json ? json : ""); });
+  sandbox->setup();
+
+  testMillis() = 14999;
+  sandbox->loop();
+  TEST_ASSERT_FALSE(sandbox->isAppRunning());
+  TEST_ASSERT_EQUAL_INT(0, (int)display->texts.size());  // still waiting
+
+  testMillis() = 15000;                  // window passes: countdown armed
+  sandbox->loop();
+  TEST_ASSERT_FALSE(sandbox->isAppRunning());
+  TEST_ASSERT_TRUE(display->texts.size() > 0);
+
+  testMillis() = 35000;                  // countdown (20 s) done: restored
+  sandbox->loop();
+  TEST_ASSERT_TRUE(sandbox->isAppRunning());
+  TEST_ASSERT_TRUE(telemetryHas("app_restored"));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_save_after_successful_load);
@@ -352,6 +384,7 @@ int main(int, char**) {
   RUN_TEST(test_persist_no_display_skips_countdown);
   RUN_TEST(test_suspend_during_countdown_is_ignored);
   RUN_TEST(test_networked_countdown_armed_on_connect_not_setup);
+  RUN_TEST(test_networked_offline_restore_after_window);
   UNITY_END();
   return 0;
 }

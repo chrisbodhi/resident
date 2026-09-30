@@ -54,6 +54,7 @@ void loop()  { sandbox.loop(); }
 | `systemButton` | `Resident::SystemButton*` | `nullptr` | Optional button the runtime polls to skip the boot countdown (and, via `onSystemButtonHold`, a runtime hold gesture). Implement `Resident::SystemButton` and pass a pointer here. |
 | `systemMic` | `Resident::SystemMic*` | `nullptr` | Optional microphone the runtime streams via the mic pump (see [SystemMic](#residentsystemmic)). On M5 boards use the shipped `Resident::M5Mic` (`#include <ResidentM5Mic.h>`); otherwise implement `Resident::SystemMic`. Not a `Driver` — the pump owns its `begin()`/`end()`. |
 | `persistentStore` | `Resident::PersistentStore*` | `nullptr` | Override the backing store for persistence. `nullptr` uses NVS on device; inject a fake in tests. |
+| `offlineRestoreAfterMs` | `uint32_t` | `0` | Networked devices arm a persisted app on their first connection. With this set, a device that still hasn't connected this many ms after `setup()` arms it anyway (the usual countdown, then load), so it runs its last app while the host is offline; a later connection's push still supersedes it. `0` = wait for the connection. |
 | `statusDisplay` | `SystemDisplay*` | `nullptr` | **Deprecated** — use `systemDisplay`. Kept as a fallback; a compile-time warning nudges migration. |
 | `statusLED` | `SystemLED*` | `nullptr` | **Deprecated** — use `systemLED`. Kept as a fallback; a compile-time warning nudges migration. |
 
