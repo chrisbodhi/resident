@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changes
+
+- **The `ctx` table is presized, and one builder makes it.** `on_tick` builds a fresh `ctx` every tick. Grown field by field, its hash part was reallocated as each field went in; `pushCtxTable` now creates it at its final size, and `callInit` and `callOnTick` call it instead of keeping their own copies. On a board without PSRAM, this raised the idle floor of the largest free block by about 4 KB.
+
+---
+
 ## v0.12.0
 
 ### Breaking changes

@@ -2936,12 +2936,7 @@ bool Sandbox::callInit()
 
   lua_rawgeti(_lua, LUA_REGISTRYINDEX, _initFuncRef);
 
-  // Push ctx table
-  unsigned long initT = millis() - _triggerResetTime;
-  lua_newtable(_lua);
-  lua_pushinteger(_lua, initT);
-  lua_setfield(_lua, -2, "time_ms");
-  pushCtxGenerationId();
+  pushCtxTable();
 
   armExecutionGuard();
   int result = lua_pcall(_lua, 1, 0, 0);
@@ -2962,13 +2957,7 @@ void Sandbox::callOnTick(unsigned long dt_ms)
 
   lua_rawgeti(_lua, LUA_REGISTRYINDEX, _onTickFuncRef);
 
-  // Push ctx table
-  unsigned long t = millis() - _triggerResetTime;
-  lua_newtable(_lua);
-  lua_pushinteger(_lua, t);
-  lua_setfield(_lua, -2, "time_ms");
-  pushCtxGenerationId();
-
+  pushCtxTable();
   lua_pushinteger(_lua, dt_ms);
 
   armExecutionGuard();
@@ -2994,7 +2983,10 @@ void Sandbox::callOnTick(unsigned long dt_ms)
 // framework hooks.
 void Sandbox::pushCtxTable()
 {
-  lua_newtable(_lua);
+  // Presized for both fields: built every tick, a table grown field by
+  // field reallocates its hash part (0 -> 1 -> 2 slots), and that per-tick
+  // churn fragments the heap on a board without PSRAM.
+  lua_createtable(_lua, 0, 2);
   lua_pushinteger(_lua, millis() - _triggerResetTime);
   lua_setfield(_lua, -2, "time_ms");
   pushCtxGenerationId();
