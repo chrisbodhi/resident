@@ -887,6 +887,8 @@ All callbacks receive a `ctx` table. `on_tick` also receives `dt_ms` (integer, m
 
 The table is IDENTICAL in every callback. The wall clock is not on `ctx`: read it from the [`datetime` module](#datetime-module) (`datetime.now()`).
 
+It is also the same table: one per app load, refilled before each callback, so a tick allocates nothing for it. Anything a callback adds to it is gone by the next callback, and a reference kept across callbacks sees its fields change. Copy a field to keep its value.
+
 ### `event` table
 
 | Field | Type | Description |

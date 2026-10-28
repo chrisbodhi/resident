@@ -630,6 +630,7 @@ private:
     int _initFuncRef = 0;
     int _onTickFuncRef = 0;
     int _onEventFuncRef = 0;
+    int _ctxRef = 0;   // the reused ctx table (see pushCtxTable)
 
     // App persistence
     PersistentStore* _store = nullptr;

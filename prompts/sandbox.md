@@ -45,6 +45,9 @@ Identical in every callback:
 Use `ctx.time_ms` for animation. For the date and time of day, use the
 `datetime` module (`datetime.now()`).
 
+`ctx` is one table, refilled before each callback. To keep a value for
+later, copy the field (`local t0 = ctx.time_ms`), not `ctx` itself.
+
 ## Events in (`on_event`)
 
 Every event has `e.name`, `e.from` (empty for hardware), `e.ts_ms`,

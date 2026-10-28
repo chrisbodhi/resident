@@ -254,6 +254,7 @@ void Sandbox::initialize()
   _initFuncRef = LUA_NOREF;
   _onTickFuncRef = LUA_NOREF;
   _onEventFuncRef = LUA_NOREF;
+  _ctxRef = LUA_NOREF;
   _fwEnvRef = LUA_NOREF;
   _fwInstallRef = LUA_NOREF;
   _fwTickRef = LUA_NOREF;
@@ -2816,6 +2817,11 @@ bool Sandbox::compileApp(const char* code)
     luaL_unref(_lua, LUA_REGISTRYINDEX, _onEventFuncRef);
     _onEventFuncRef = LUA_NOREF;
   }
+  // A new app gets a new ctx: nothing the last one kept a reference to.
+  if (_ctxRef != LUA_NOREF) {
+    luaL_unref(_lua, LUA_REGISTRYINDEX, _ctxRef);
+    _ctxRef = LUA_NOREF;
+  }
 
   // Reset runtime error rate limiter
   _runtimeErrorCount = 0;
@@ -2981,15 +2987,45 @@ void Sandbox::callOnTick(unsigned long dt_ms)
 
 // The uniform ctx table (0.8): identical in every callback and for
 // framework hooks.
+//
+// One table per app load, refilled for each callback. Built fresh, ctx was
+// an allocation, and then garbage, at every tick and every event; on a
+// board without PSRAM that garbage shares the heap with the network stack.
+// Whatever a callback added to it is cleared first, so every callback sees
+// exactly the documented fields. What an app can observe is that ctx is the
+// same table each time: a reference kept across callbacks sees it change.
 void Sandbox::pushCtxTable()
 {
-  // Presized for both fields: built every tick, a table grown field by
-  // field reallocates its hash part (0 -> 1 -> 2 slots), and that per-tick
-  // churn fragments the heap on a board without PSRAM.
-  lua_createtable(_lua, 0, 2);
+  if (_ctxRef == LUA_NOREF) {
+    lua_createtable(_lua, 0, 2);
+    lua_pushvalue(_lua, -1);
+    _ctxRef = luaL_ref(_lua, LUA_REGISTRYINDEX);
+  } else {
+    lua_rawgeti(_lua, LUA_REGISTRYINDEX, _ctxRef);
+    // Keep the two fields' slots (they are overwritten below, so refilling
+    // never allocates); drop anything else. Clearing an EXISTING field
+    // during traversal is defined behaviour.
+    lua_pushnil(_lua);
+    while (lua_next(_lua, -2)) {            // [ctx, key, value]
+      lua_pop(_lua, 1);                     // [ctx, key]
+      bool own = lua_type(_lua, -1) == LUA_TSTRING &&
+                 (strcmp(lua_tostring(_lua, -1), "time_ms") == 0 ||
+                  strcmp(lua_tostring(_lua, -1), "generation_id") == 0);
+      if (!own) {
+        lua_pushvalue(_lua, -1);
+        lua_pushnil(_lua);
+        lua_rawset(_lua, -4);               // ctx[key] = nil
+      }
+    }
+  }
   lua_pushinteger(_lua, millis() - _triggerResetTime);
   lua_setfield(_lua, -2, "time_ms");
-  pushCtxGenerationId();
+  if (_generationIdFromWire) {
+    pushCtxGenerationId();
+  } else {
+    lua_pushnil(_lua);
+    lua_setfield(_lua, -2, "generation_id");
+  }
 }
 
 void Sandbox::processNextEvent()

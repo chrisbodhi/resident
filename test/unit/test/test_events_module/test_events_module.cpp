@@ -547,6 +547,44 @@ void test_ctx_generation_id_nil_when_not_sent(void) {
   TEST_ASSERT_TRUE(sandbox->luaGlobalBoolForTest("evt_nil"));
 }
 
+// ── reused ctx table ──────────────────────────────────────────────────────
+
+void test_ctx_fields_a_callback_adds_are_cleared(void) {
+  build();
+  loadApp(
+      "ticks = 0\n"
+      "function on_tick(ctx, dt)\n"
+      "  if ctx.mine ~= nil or ctx.time_ms == nil then stale = true end\n"
+      "  ctx.mine = true; ctx[1] = 'x'; ticks = ticks + 1\n"
+      "end\n"
+      "function on_event(ctx, event)\n"
+      "  evt_clean = (ctx.mine == nil and ctx[1] == nil and ctx.time_ms ~= nil)\n"
+      "end\n");
+  sandbox->callOnTickForTest(100);
+  sandbox->callOnTickForTest(100);
+  sandbox->sendAppEvent("poke", "{}");
+  pump();
+  TEST_ASSERT_TRUE(sandbox->luaGlobalIntForTest("ticks") >= 2);   // refilled at least once
+  TEST_ASSERT_FALSE(sandbox->luaGlobalBoolForTest("stale"));
+  TEST_ASSERT_TRUE(sandbox->luaGlobalBoolForTest("evt_clean"));
+}
+
+void test_ctx_is_one_table_across_callbacks(void) {
+  build();
+  loadApp(
+      "function on_tick(ctx, dt)\n"
+      "  if prev ~= nil then tick_same = (prev == ctx) end\n"
+      "  prev = ctx\n"
+      "end\n"
+      "function on_event(ctx, event) evt_same = (prev == ctx) end\n");
+  sandbox->callOnTickForTest(100);
+  sandbox->callOnTickForTest(100);
+  sandbox->sendAppEvent("poke", "{}");
+  pump();
+  TEST_ASSERT_TRUE(sandbox->luaGlobalBoolForTest("tick_same"));
+  TEST_ASSERT_TRUE(sandbox->luaGlobalBoolForTest("evt_same"));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_events_send_builds_app_channel_envelope);
@@ -580,5 +618,7 @@ int main(int, char**) {
   RUN_TEST(test_host_injected_event_defaults_driver_channel);
   RUN_TEST(test_ctx_generation_id_from_wire_in_all_callbacks);
   RUN_TEST(test_ctx_generation_id_nil_when_not_sent);
+  RUN_TEST(test_ctx_fields_a_callback_adds_are_cleared);
+  RUN_TEST(test_ctx_is_one_table_across_callbacks);
   return UNITY_END();
 }
